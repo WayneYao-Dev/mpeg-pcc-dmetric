@@ -1,23 +1,29 @@
 # Set default behaviour, this overrides core.autocrlf (as
 # no file will have an unspecified text attribute.
 * text=auto
+.gitattributes text eol=lf
 
 # The following force textmode when it wouldn't otherwise be
 # detected.  Probably best to keep this list short.
-*.asm text
-*.cc text
-*.cpp text
-*.c text
-*.cxx text
-*.hh text
-*.hpp text
-*.h text
-*.txt text
+*.asm text eol=lf
+*.cc text eol=lf
+*.cpp text eol=lf
+*.c text eol=lf
+*.cxx text eol=lf
+*.hh text eol=lf
+*.hpp text eol=lf
+*.h text eol=lf
+*.txt text eol=lf
 
 # the following files should always have lf line endings.
 # (any editing that introduces crlf should have that stripped)
 *.awk text eol=lf
+*.cmake text eol=lf
+*.md text eol=lf
+*.m text eol=lf
+*.py text eol=lf
 *.sh text eol=lf
+CMakeLists.txt text eol=lf
 
 # The following should always have line endings normalised to CRLF.
 # Ie, they are represented internally in git using LF and
