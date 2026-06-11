@@ -40,7 +40,6 @@
 
 #include "pcc_processing.hpp"
 #include "pcc_distortion.hpp"
-#include "pcc_pointssim.hpp"
 
 using namespace std;
 using namespace pcc_quality;
@@ -749,9 +748,6 @@ commandPar::commandPar()
   resolution = 0.0;
   dropDuplicates = 0;
   neighborsProc = 0;
-  bPointSSIMGeo = true;
-  bPointSSIMColor = false;
-  pointSSIMNeighbors = 11;
 
   normalCalcModificationEnable = false;
 }
@@ -1097,16 +1093,6 @@ void pcc_quality::computeQualityMetric( PccPointCloud& cloudA,
     //if singlePass = 1, set results of A -> B to qual_metric.
     qual_metric = metricA;
   }
-
-  if (cPar.bPointSSIMGeo) {
-    pointSSIMPar pointSSIMParams;
-    pointSSIMParams.bColor = cPar.bPointSSIMColor;
-    pointSSIMParams.neighbors = cPar.pointSSIMNeighbors;
-
-    pointSSIMMetric pointSSIMResults;
-    computePointSSIM(cloudA, cloudB, pointSSIMParams, pointSSIMResults, verbose);
-  }
-
   if (qual_metric_perPointsA != nullptr) {
       for (long i = 0; i < cloudA.size; ++i) {
           (*qual_metric_perPointsA)[i] = metricPerPointsA[i];

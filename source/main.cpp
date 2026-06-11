@@ -107,9 +107,6 @@ int parseCommand( int ac, char * av[], commandPar &cPar )
                                                             "with same geometric distance)" )
        ("mseSpace",       cPar.mseSpace,        1,          "Colour space used for PSNR calculation\n"
                                                             "0: none (identity) 1: ITU-R BT.709 8: YCgCo-R")
-       ("pointssimGeo",   cPar.bPointSSIMGeo,   true,       "Compute PointSSIM geometry metrics" )
-       ("pointssimColor", cPar.bPointSSIMColor, false,      "Compute PointSSIM color metrics" )
-       ("pointssimNeighbors", cPar.pointSSIMNeighbors, 11,  "Number of external nearest neighbors used for PointSSIM" )
        ("nbThreads",      cPar.nbThreads,       1,          "Number of threads used for parallel processing" );
 
     setDefaults(opts);
@@ -121,10 +118,6 @@ int parseCommand( int ac, char * av[], commandPar &cPar )
     }
     if( cPar.file1 == "" ) { err.error() << "File 1 parameters not correct \n"; print_help = true; }
     if( cPar.file2 == "" ) { err.error() << "File 2 parameters not correct \n"; print_help = true; }
-    if( cPar.bPointSSIMGeo && cPar.pointSSIMNeighbors < 2 ) {
-      err.error() << "PointSSIM requires at least 2 external neighbors \n";
-      print_help = true;
-    }
   }
   catch(std::exception& e) {
     cout << e.what() << "\n";
@@ -171,9 +164,6 @@ void printCommand( commandPar &cPar )
   cout << "neighborsProc:  " << cPar.neighborsProc    << endl;
   cout << "averageNormals: " << cPar.bAverageNormals  << endl;
   cout << "mseSpace:       " << cPar.mseSpace         << endl;
-  cout << "pointssimGeo:   " << cPar.bPointSSIMGeo    << endl;
-  cout << "pointssimColor: " << cPar.bPointSSIMColor  << endl;
-  cout << "pointssimNeighbors: " << cPar.pointSSIMNeighbors << endl;
   cout << "nbThreads:      " << cPar.nbThreads        << endl;
   if (cPar.singlePass) {
     cout << "force running a single pass" << endl;
