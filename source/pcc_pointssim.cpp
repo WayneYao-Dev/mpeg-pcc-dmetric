@@ -51,6 +51,7 @@ using namespace pcc_quality;
 namespace {
 
   const size_t kPointSSIMExternalNeighbors = 11;
+  const size_t kPointSSIMNeighborCount = kPointSSIMExternalNeighbors + 1;
   const double kPointSSIMEpsilon = 2.2204460492503131e-16;
 
   typedef uint32_t index_type;
@@ -76,31 +77,33 @@ namespace {
     vector<double> mean;
   };
 
-  double sampleVariance(const vector<double>& values)
+  template<size_t N>
+  double sampleVariance(const array<double, N>& values)
   {
-    if (values.size() < 2)
+    if (N < 2)
       return 0.0;
 
     double mean = 0.0;
-    for (size_t i = 0; i < values.size(); ++i)
+    for (size_t i = 0; i < N; ++i)
       mean += values[i];
-    mean /= static_cast<double>(values.size());
+    mean /= static_cast<double>(N);
 
     double sum = 0.0;
-    for (size_t i = 0; i < values.size(); ++i) {
+    for (size_t i = 0; i < N; ++i) {
       const double difference = values[i] - mean;
       sum += difference * difference;
     }
 
-    return sum / static_cast<double>(values.size() - 1);
+    return sum / static_cast<double>(N - 1);
   }
 
-  double arithmeticMean(const vector<double>& values)
+  template<size_t N>
+  double arithmeticMean(const array<double, N>& values)
   {
     double sum = 0.0;
-    for (size_t i = 0; i < values.size(); ++i)
+    for (size_t i = 0; i < N; ++i)
       sum += values[i];
-    return sum / static_cast<double>(values.size());
+    return sum / static_cast<double>(N);
   }
 
   double rgbToLuma(const RGBSet::value_type& rgb)
@@ -111,29 +114,27 @@ namespace {
   }
 
   bool geometryFeatureMaps(PccPointCloud& cloud,
+                           const pointSSIMKdTree& index,
                            bool useMean,
                            featureMaps& maps)
   {
     if (cloud.size <= static_cast<long int>(kPointSSIMExternalNeighbors))
       return false;
 
-    const size_t neighborCount = kPointSSIMExternalNeighbors + 1;
-    pointSSIMKdTree index(3, cloud.xyz.p, 10);
     maps.var.resize(static_cast<size_t>(cloud.size));
     if (useMean)
       maps.mean.resize(static_cast<size_t>(cloud.size));
 
 #pragma omp parallel for
     for (long i = 0; i < cloud.size; ++i) {
-      vector<index_type> neighborIndices(neighborCount);
-      vector<distance_type> squaredDistances(neighborCount);
-      index.query(&cloud.xyz.p[i][0], neighborCount,
+      array<index_type, kPointSSIMNeighborCount> neighborIndices;
+      array<distance_type, kPointSSIMNeighborCount> squaredDistances;
+      index.query(&cloud.xyz.p[i][0], kPointSSIMNeighborCount,
                   &neighborIndices[0], &squaredDistances[0]);
 
-      vector<double> distances;
-      distances.reserve(kPointSSIMExternalNeighbors);
-      for (size_t j = 1; j < neighborCount; ++j)
-        distances.push_back(sqrt(squaredDistances[j]));
+      array<double, kPointSSIMExternalNeighbors> distances;
+      for (size_t j = 0; j < kPointSSIMExternalNeighbors; ++j)
+        distances[j] = sqrt(squaredDistances[j + 1]);
 
       maps.var[static_cast<size_t>(i)] = sampleVariance(distances);
       if (useMean)
@@ -144,6 +145,7 @@ namespace {
   }
 
   bool colorFeatureMaps(PccPointCloud& cloud,
+                        const pointSSIMKdTree& index,
                         bool useMean,
                         featureMaps& maps)
   {
@@ -151,8 +153,6 @@ namespace {
         cloud.size <= static_cast<long int>(kPointSSIMExternalNeighbors))
       return false;
 
-    const size_t neighborCount = kPointSSIMExternalNeighbors + 1;
-    pointSSIMKdTree index(3, cloud.xyz.p, 10);
     vector<double> luma(static_cast<size_t>(cloud.size));
     maps.var.resize(static_cast<size_t>(cloud.size));
     if (useMean)
@@ -163,15 +163,14 @@ namespace {
 
 #pragma omp parallel for
     for (long i = 0; i < cloud.size; ++i) {
-      vector<index_type> neighborIndices(neighborCount);
-      vector<distance_type> squaredDistances(neighborCount);
-      index.query(&cloud.xyz.p[i][0], neighborCount,
+      array<index_type, kPointSSIMNeighborCount> neighborIndices;
+      array<distance_type, kPointSSIMNeighborCount> squaredDistances;
+      index.query(&cloud.xyz.p[i][0], kPointSSIMNeighborCount,
                   &neighborIndices[0], &squaredDistances[0]);
 
-      vector<double> values;
-      values.reserve(neighborCount);
-      for (size_t j = 0; j < neighborCount; ++j)
-        values.push_back(luma[neighborIndices[j]]);
+      array<double, kPointSSIMNeighborCount> values;
+      for (size_t j = 0; j < kPointSSIMNeighborCount; ++j)
+        values[j] = luma[neighborIndices[j]];
 
       maps.var[static_cast<size_t>(i)] = sampleVariance(values);
       if (useMean)
@@ -181,10 +180,9 @@ namespace {
     return true;
   }
 
-  vector<size_t> nearestIndices(PccPointCloud& reference,
+  vector<size_t> nearestIndices(const pointSSIMKdTree& index,
                                 PccPointCloud& query)
   {
-    pointSSIMKdTree index(3, reference.xyz.p, 10);
     vector<size_t> indices(static_cast<size_t>(query.size));
 
 #pragma omp parallel for
@@ -298,14 +296,17 @@ void pcc_quality::computePointSSIM(PccPointCloud& cloudA,
   if (!computeGeometry && !computeColor)
     return;
 
-  const vector<size_t> indicesBA = nearestIndices(cloudA, cloudB);
-  const vector<size_t> indicesAB = nearestIndices(cloudB, cloudA);
+  pointSSIMKdTree indexA(3, cloudA.xyz.p, 10);
+  pointSSIMKdTree indexB(3, cloudB.xyz.p, 10);
+
+  const vector<size_t> indicesBA = nearestIndices(indexA, cloudB);
+  const vector<size_t> indicesAB = nearestIndices(indexB, cloudA);
 
   if (computeGeometry) {
     featureMaps mapsA;
     featureMaps mapsB;
-    if (geometryFeatureMaps(cloudA, useMean, mapsA) &&
-        geometryFeatureMaps(cloudB, useMean, mapsB)) {
+    if (geometryFeatureMaps(cloudA, indexA, useMean, mapsA) &&
+        geometryFeatureMaps(cloudB, indexB, useMean, mapsB)) {
       computeScores(mapsA, mapsB, indicesBA, indicesAB,
                     useMean, metric.geometry);
       metric.hasGeometry = true;
@@ -315,8 +316,8 @@ void pcc_quality::computePointSSIM(PccPointCloud& cloudA,
   if (computeColor) {
     featureMaps mapsA;
     featureMaps mapsB;
-    if (colorFeatureMaps(cloudA, useMean, mapsA) &&
-        colorFeatureMaps(cloudB, useMean, mapsB)) {
+    if (colorFeatureMaps(cloudA, indexA, useMean, mapsA) &&
+        colorFeatureMaps(cloudB, indexB, useMean, mapsB)) {
       computeScores(mapsA, mapsB, indicesBA, indicesAB,
                     useMean, metric.color);
       metric.hasColor = true;
