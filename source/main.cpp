@@ -109,6 +109,7 @@ int parseCommand( int ac, char * av[], commandPar &cPar )
                                                             "0: none (identity) 1: ITU-R BT.709 8: YCgCo-R")
        ("pointssimGeo",   cPar.bPointSSIMGeo,   true,       "Compute PointSSIM geometry metrics" )
        ("pointssimColor", cPar.bPointSSIMColor, false,      "Compute PointSSIM color metrics" )
+       ("pointssimMean",  cPar.bPointSSIMMean,  false,      "Compute PointSSIM scores using the Mean estimator" )
        ("nbThreads",      cPar.nbThreads,       1,          "Number of threads used for parallel processing" );
 
     setDefaults(opts);
@@ -168,6 +169,7 @@ void printCommand( commandPar &cPar )
   cout << "mseSpace:       " << cPar.mseSpace         << endl;
   cout << "pointssimGeo:   " << cPar.bPointSSIMGeo    << endl;
   cout << "pointssimColor: " << cPar.bPointSSIMColor  << endl;
+  cout << "pointssimMean:  " << cPar.bPointSSIMMean   << endl;
   cout << "nbThreads:      " << cPar.nbThreads        << endl;
   if (cPar.singlePass) {
     cout << "force running a single pass" << endl;

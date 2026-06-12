@@ -83,6 +83,7 @@ namespace pcc_quality {
 
     bool   bPointSSIMGeo;     //! compute PointSSIM geometry metrics
     bool   bPointSSIMColor;   //! compute PointSSIM color metrics
+    bool   bPointSSIMMean;    //! use the optional Mean estimator for PointSSIM
 
     int    nbThreads;         //! Number of threads used for parallel processing.
 

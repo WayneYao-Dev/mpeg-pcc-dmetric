@@ -751,6 +751,7 @@ commandPar::commandPar()
   neighborsProc = 0;
   bPointSSIMGeo = true;
   bPointSSIMColor = false;
+  bPointSSIMMean = false;
 
   normalCalcModificationEnable = false;
 }
@@ -1108,6 +1109,7 @@ void pcc_quality::computeQualityMetric( PccPointCloud& cloudA,
     pointSSIMMetric pointSSIM;
     computePointSSIM(cloudA, cloudB,
                      cPar.bPointSSIMGeo, cPar.bPointSSIMColor,
+                     cPar.bPointSSIMMean,
                      pointSSIM, verbose);
   }
 

@@ -110,7 +110,9 @@ namespace {
     return max(0.0, min(255.0, luma));
   }
 
-  bool geometryFeatureMaps(PccPointCloud& cloud, featureMaps& maps)
+  bool geometryFeatureMaps(PccPointCloud& cloud,
+                           bool useMean,
+                           featureMaps& maps)
   {
     if (cloud.size <= static_cast<long int>(kPointSSIMExternalNeighbors))
       return false;
@@ -118,7 +120,8 @@ namespace {
     const size_t neighborCount = kPointSSIMExternalNeighbors + 1;
     pointSSIMKdTree index(3, cloud.xyz.p, 10);
     maps.var.resize(static_cast<size_t>(cloud.size));
-    maps.mean.resize(static_cast<size_t>(cloud.size));
+    if (useMean)
+      maps.mean.resize(static_cast<size_t>(cloud.size));
 
 #pragma omp parallel for
     for (long i = 0; i < cloud.size; ++i) {
@@ -133,13 +136,16 @@ namespace {
         distances.push_back(sqrt(squaredDistances[j]));
 
       maps.var[static_cast<size_t>(i)] = sampleVariance(distances);
-      maps.mean[static_cast<size_t>(i)] = arithmeticMean(distances);
+      if (useMean)
+        maps.mean[static_cast<size_t>(i)] = arithmeticMean(distances);
     }
 
     return true;
   }
 
-  bool colorFeatureMaps(PccPointCloud& cloud, featureMaps& maps)
+  bool colorFeatureMaps(PccPointCloud& cloud,
+                        bool useMean,
+                        featureMaps& maps)
   {
     if (!cloud.bRgb ||
         cloud.size <= static_cast<long int>(kPointSSIMExternalNeighbors))
@@ -149,7 +155,8 @@ namespace {
     pointSSIMKdTree index(3, cloud.xyz.p, 10);
     vector<double> luma(static_cast<size_t>(cloud.size));
     maps.var.resize(static_cast<size_t>(cloud.size));
-    maps.mean.resize(static_cast<size_t>(cloud.size));
+    if (useMean)
+      maps.mean.resize(static_cast<size_t>(cloud.size));
 
     for (long i = 0; i < cloud.size; ++i)
       luma[static_cast<size_t>(i)] = rgbToLuma(cloud.rgb.c[static_cast<size_t>(i)]);
@@ -167,7 +174,8 @@ namespace {
         values.push_back(luma[neighborIndices[j]]);
 
       maps.var[static_cast<size_t>(i)] = sampleVariance(values);
-      maps.mean[static_cast<size_t>(i)] = arithmeticMean(values);
+      if (useMean)
+        maps.mean[static_cast<size_t>(i)] = arithmeticMean(values);
     }
 
     return true;
@@ -221,25 +229,32 @@ namespace {
                      const featureMaps& mapsB,
                      const vector<size_t>& indicesBA,
                      const vector<size_t>& indicesAB,
+                     bool useMean,
                      pointSSIMScore& score)
   {
     score.ba.var = meanSimilarity(mapsB.var, mapsA.var, indicesBA);
     score.ab.var = meanSimilarity(mapsA.var, mapsB.var, indicesAB);
     score.sym.var = min(score.ba.var, score.ab.var);
 
-    score.ba.mean = meanSimilarity(mapsB.mean, mapsA.mean, indicesBA);
-    score.ab.mean = meanSimilarity(mapsA.mean, mapsB.mean, indicesAB);
-    score.sym.mean = min(score.ba.mean, score.ab.mean);
+    if (useMean) {
+      score.ba.mean = meanSimilarity(mapsB.mean, mapsA.mean, indicesBA);
+      score.ab.mean = meanSimilarity(mapsA.mean, mapsB.mean, indicesAB);
+      score.sym.mean = min(score.ba.mean, score.ab.mean);
+    }
   }
 
-  void printScore(const char* attribute, const pointSSIMScore& score)
+  void printScore(const char* attribute,
+                  const pointSSIMScore& score,
+                  bool printMean)
   {
     cout << "   " << attribute << "SSIM,VAR,BA   : " << score.ba.var << endl;
     cout << "   " << attribute << "SSIM,VAR,AB   : " << score.ab.var << endl;
     cout << "   " << attribute << "SSIM,VAR,sym  : " << score.sym.var << endl;
-    cout << "   " << attribute << "SSIM,Mean,BA  : " << score.ba.mean << endl;
-    cout << "   " << attribute << "SSIM,Mean,AB  : " << score.ab.mean << endl;
-    cout << "   " << attribute << "SSIM,Mean,sym : " << score.sym.mean << endl;
+    if (printMean) {
+      cout << "   " << attribute << "SSIM,Mean,BA  : " << score.ba.mean << endl;
+      cout << "   " << attribute << "SSIM,Mean,AB  : " << score.ab.mean << endl;
+      cout << "   " << attribute << "SSIM,Mean,sym : " << score.sym.mean << endl;
+    }
   }
 
 }
@@ -256,6 +271,7 @@ void pcc_quality::computePointSSIM(PccPointCloud& cloudA,
                                    PccPointCloud& cloudB,
                                    bool computeGeometry,
                                    bool computeColor,
+                                   bool useMean,
                                    pointSSIMMetric& metric,
                                    const bool verbose)
 {
@@ -288,9 +304,10 @@ void pcc_quality::computePointSSIM(PccPointCloud& cloudA,
   if (computeGeometry) {
     featureMaps mapsA;
     featureMaps mapsB;
-    if (geometryFeatureMaps(cloudA, mapsA) &&
-        geometryFeatureMaps(cloudB, mapsB)) {
-      computeScores(mapsA, mapsB, indicesBA, indicesAB, metric.geometry);
+    if (geometryFeatureMaps(cloudA, useMean, mapsA) &&
+        geometryFeatureMaps(cloudB, useMean, mapsB)) {
+      computeScores(mapsA, mapsB, indicesBA, indicesAB,
+                    useMean, metric.geometry);
       metric.hasGeometry = true;
     }
   }
@@ -298,9 +315,10 @@ void pcc_quality::computePointSSIM(PccPointCloud& cloudA,
   if (computeColor) {
     featureMaps mapsA;
     featureMaps mapsB;
-    if (colorFeatureMaps(cloudA, mapsA) &&
-        colorFeatureMaps(cloudB, mapsB)) {
-      computeScores(mapsA, mapsB, indicesBA, indicesAB, metric.color);
+    if (colorFeatureMaps(cloudA, useMean, mapsA) &&
+        colorFeatureMaps(cloudB, useMean, mapsB)) {
+      computeScores(mapsA, mapsB, indicesBA, indicesAB,
+                    useMean, metric.color);
       metric.hasColor = true;
     }
   }
@@ -308,8 +326,8 @@ void pcc_quality::computePointSSIM(PccPointCloud& cloudA,
   if (verbose && (metric.hasGeometry || metric.hasColor)) {
     cout << "4. PointSSIM.\n";
     if (metric.hasGeometry)
-      printScore("geo", metric.geometry);
+      printScore("geo", metric.geometry, useMean);
     if (metric.hasColor)
-      printScore("color", metric.color);
+      printScore("color", metric.color, useMean);
   }
 }

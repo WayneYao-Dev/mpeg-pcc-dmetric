@@ -58,6 +58,7 @@ Options:
                             0: none (identity) 1: ITU-R BT.709 8: YCgCo-R
         --pointssimGeo=1    Compute PointSSIM geometry metrics
         --pointssimColor=0  Compute PointSSIM color metrics
+        --pointssimMean=0   Compute PointSSIM scores using the Mean estimator
         --nbThreads=1       Number of threads used for parallel processing
 
 Example:
@@ -70,8 +71,9 @@ Example:
 ```
 
 PointSSIM uses a fixed neighborhood of 11 external nearest neighbors. The
-geometry and color metrics report VAR and Mean estimator scores in both
-directions and their symmetric minimum. PointSSIM recommends
+geometry and color metrics report VAR estimator scores by default in both
+directions and their symmetric minimum. Use `--pointssimMean=1` to also
+compute and report Mean estimator scores. PointSSIM recommends
 `--dropdups=2`, which merges duplicated coordinates and averages their
 attributes.
 

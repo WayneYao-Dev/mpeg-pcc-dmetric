@@ -64,6 +64,7 @@ namespace pcc_quality {
                         pcc_processing::PccPointCloud& cloudB,
                         bool computeGeometry,
                         bool computeColor,
+                        bool useMean,
                         pointSSIMMetric& metric,
                         const bool verbose);
 
