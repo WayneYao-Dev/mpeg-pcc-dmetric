@@ -35,7 +35,7 @@ The next table presents the software options.
                            &     & with same geometric distance)                        \\ \hline
         --mseSpace=1       & 1   & colour space used for mse calculation                \\
                            &     & 0(identity), 1(Rec. ITU-R BT.709), 8(YCgCo-R)        \\ \hline
+        --pointssimGeo=1   & 1   & Compute PointSSIM geometry metrics                    \\ \hline
+        --pointssimColor=0 & 0   & Compute PointSSIM color metrics                       \\ \hline
         --nbThreads=1      & 1   & Number of threads used for parallel processin        \\ \hline
 \end{longtable}
-
- 

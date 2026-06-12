@@ -56,6 +56,8 @@ Options:
                             with same geometric distance)
         --mseSpace=1        Colour space used for PSNR calculation
                             0: none (identity) 1: ITU-R BT.709 8: YCgCo-R
+        --pointssimGeo=1    Compute PointSSIM geometry metrics
+        --pointssimColor=0  Compute PointSSIM color metrics
         --nbThreads=1       Number of threads used for parallel processing
 
 Example:
@@ -66,6 +68,12 @@ Example:
           --color=1 \
           --resolution=1023
 ```
+
+PointSSIM uses a fixed neighborhood of 11 external nearest neighbors. The
+geometry and color metrics report VAR and Mean estimator scores in both
+directions and their symmetric minimum. PointSSIM recommends
+`--dropdups=2`, which merges duplicated coordinates and averages their
+attributes.
 
 The following command line computes the point cloud metrics between two point clouds.
 
@@ -90,3 +98,5 @@ this manual could be generate with the following command line:
 
 ## Reference
    MPEG input document m40522, "Updates and Integration of Evaluation Metric Software for PCC"
+
+   E. Alexiou and T. Ebrahimi, "Towards a Point Cloud Structural Similarity Metric," IEEE ICMEW, 2020.

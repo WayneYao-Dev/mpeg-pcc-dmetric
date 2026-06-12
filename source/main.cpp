@@ -107,6 +107,8 @@ int parseCommand( int ac, char * av[], commandPar &cPar )
                                                             "with same geometric distance)" )
        ("mseSpace",       cPar.mseSpace,        1,          "Colour space used for PSNR calculation\n"
                                                             "0: none (identity) 1: ITU-R BT.709 8: YCgCo-R")
+       ("pointssimGeo",   cPar.bPointSSIMGeo,   true,       "Compute PointSSIM geometry metrics" )
+       ("pointssimColor", cPar.bPointSSIMColor, false,      "Compute PointSSIM color metrics" )
        ("nbThreads",      cPar.nbThreads,       1,          "Number of threads used for parallel processing" );
 
     setDefaults(opts);
@@ -164,6 +166,8 @@ void printCommand( commandPar &cPar )
   cout << "neighborsProc:  " << cPar.neighborsProc    << endl;
   cout << "averageNormals: " << cPar.bAverageNormals  << endl;
   cout << "mseSpace:       " << cPar.mseSpace         << endl;
+  cout << "pointssimGeo:   " << cPar.bPointSSIMGeo    << endl;
+  cout << "pointssimColor: " << cPar.bPointSSIMColor  << endl;
   cout << "nbThreads:      " << cPar.nbThreads        << endl;
   if (cPar.singlePass) {
     cout << "force running a single pass" << endl;

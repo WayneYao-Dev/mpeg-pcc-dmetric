@@ -81,6 +81,9 @@ namespace pcc_quality {
     int    mseSpace;          //! 0(RGB), 1(YCbCr), 8(YCoCg-R)
     bool   bAverageNormals;   //! 0(undefined), 1(average normal based on neighbors with same geometric distance)
 
+    bool   bPointSSIMGeo;     //! compute PointSSIM geometry metrics
+    bool   bPointSSIMColor;   //! compute PointSSIM color metrics
+
     int    nbThreads;         //! Number of threads used for parallel processing.
 
     bool   normalCalcModificationEnable;    //! Enable modification of the normal calculation for D2.
